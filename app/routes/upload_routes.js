@@ -6,6 +6,9 @@ const passport = require('passport')
 // pull in Mongoose model for uploads
 const Upload = require('../models/upload')
 
+// include the s3 upload api module
+const s3Upload = require('../../lib/s3Upload')
+
 // this is a collection of methods that help us detect situations when we need
 // to throw a custom error
 const customErrors = require('../../lib/custom_errors')
@@ -57,11 +60,18 @@ router.get('/uploads/:id', requireToken, (req, res, next) => {
 
 // CREATE
 // POST /uploads
-router.post('/uploads', requireToken, (req, res, next) => {
+router.post('/uploads', (req, res, next) => {
   // set owner of new upload to be current user
-  req.body.upload.owner = req.user.id
+  // req.body.upload.owner = req.user.id
 
-  Upload.create(req.body.upload)
+  s3Upload('text-test.txt', 'Hello World!')
+    .then(data => {
+      return Upload.create({
+        fileName: data.key,
+        fileType: 'Image',
+        fileUrl: data.Location
+      })
+    })
     // respond to succesful `create` with status 201 and JSON of new "upload"
     .then(upload => {
       res.status(201).json({ upload: upload.toObject() })
